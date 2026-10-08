@@ -20,44 +20,33 @@ import {
   X,
 } from "lucide-react";
 
+import { clients, projects, type Project } from "./content";
+
+export type VideoItem = {
+  id: string;
+  title: string;
+  file?: string;
+  poster?: string;
+};
+
+export function videoFor(project: Project): VideoItem {
+  return {
+    id: project.video ?? project.key,
+    title: `${project.artist} — ${project.title}`,
+    file: project.file,
+    poster: project.poster,
+  };
+}
+
 const links = [
-  ["The Studio", "studio"],
-  ["Services", "services"],
-  ["Our Work", "listen"],
-  ["Pricing", "pricing"],
-];
-const projects = [
-  {
-    title: "Mercy Revealed",
-    artist: "Stronghold Quartet",
-    category: "Southern gospel",
-    image: "guitar.webp",
-    video: "HCzpc2-L2Uk",
-  },
-  {
-    title: "Praise Hymn",
-    artist: "Vickie Atchinson",
-    category: "Hymns & inspiration",
-    image: "keys.webp",
-    video: "05VGo-d6_6U",
-  },
-  {
-    title: "The Solid Rock",
-    artist: "Stephen & Marie Forester",
-    category: "Gospel",
-    image: "microphones.webp",
-    video: "U7oE0CthpA0",
-  },
-  {
-    title: "A New Chapter",
-    artist: "Stephen Forester",
-    category: "Instrumental",
-    image: "console.webp",
-    video: "lfm88tek7qw",
-  },
+  ["The Studio", "#studio"],
+  ["Our Work", "#listen"],
+  ["Team", "/team"],
+  ["Sessions", "/sessions"],
+  ["Pricing", "/pricing"],
 ];
 
-function Soundmark({ className = "" }: { className?: string }) {
+export function Soundmark({ className = "" }: { className?: string }) {
   return (
     <span className={`soundmark ${className}`} aria-hidden="true">
       {[12, 23, 35, 47, 36, 23, 12].map((h, i) => (
@@ -67,11 +56,11 @@ function Soundmark({ className = "" }: { className?: string }) {
   );
 }
 
-function Brand() {
+export function Brand({ href = "#home" }: { href?: string }) {
   return (
     <a
       className="brand"
-      href="#home"
+      href={href}
       aria-label="Great Lakes Gospel Studio home"
     >
       <Soundmark />
@@ -82,11 +71,11 @@ function Brand() {
   );
 }
 
-function VideoDialog({
+export function VideoDialog({
   video,
   close,
 }: {
-  video: { id: string; title: string };
+  video: VideoItem;
   close: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -125,20 +114,32 @@ function VideoDialog({
           <X />
         </button>
       </div>
-      <iframe
-        src={`https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0`}
-        title={video.title}
-        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-        allowFullScreen
-      />
+      {video.file ? (
+        <video
+          src={video.file}
+          poster={video.poster}
+          controls
+          autoPlay
+          playsInline
+          preload="metadata"
+        />
+      ) : (
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0`}
+          title={video.title}
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+        />
+      )}
       <p>
         Having trouble playing?{" "}
         <a
-          href={`https://www.youtube.com/watch?v=${video.id}`}
+          href={video.file ?? `https://www.youtube.com/watch?v=${video.id}`}
           target="_blank"
           rel="noreferrer"
         >
-          Watch on YouTube <ArrowUpRight size={14} />
+          {video.file ? "Open the video file" : "Watch on YouTube"}{" "}
+          <ArrowUpRight size={14} />
         </a>
       </p>
     </dialog>
@@ -236,9 +237,7 @@ function ProjectForm() {
 
 export default function Studio() {
   const [menu, setMenu] = useState(false);
-  const [video, setVideo] = useState<{ id: string; title: string } | null>(
-    null,
-  );
+  const [video, setVideo] = useState<VideoItem | null>(null);
   const [filter, setFilter] = useState("All projects");
   const [photo, setPhoto] = useState(0);
   const gallery = [
@@ -279,8 +278,8 @@ export default function Studio() {
         <div className="nav-wrap">
           <Brand />
           <nav className="desktop-nav" aria-label="Main navigation">
-            {links.map(([label, id]) => (
-              <a href={`#${id}`} key={id}>
+            {links.map(([label, href]) => (
+              <a href={href} key={href}>
                 {label}
               </a>
             ))}
@@ -305,12 +304,14 @@ export default function Studio() {
             className="mobile-nav"
             aria-label="Mobile navigation"
           >
-            {[...links, ["Start a project", "contact"]].map(([label, id]) => (
-              <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>
-                {label}
-                <ArrowUpRight size={20} />
-              </a>
-            ))}
+            {[...links, ["Start a project", "#contact"]].map(
+              ([label, href]) => (
+                <a href={href} key={href} onClick={() => setMenu(false)}>
+                  {label}
+                  <ArrowUpRight size={20} />
+                </a>
+              ),
+            )}
           </nav>
         )}
       </header>
@@ -502,7 +503,8 @@ export default function Studio() {
             <span>ALSO IN OUR REPERTOIRE</span>
             <p>
               Songwriter demos <i /> Choir & church recordings <i /> Background
-              vocals <i /> Album artwork & CD duplication
+              vocals <i /> Radio commercials <i /> Album artwork & CD
+              duplication
             </p>
           </div>
         </section>
@@ -560,16 +562,11 @@ export default function Studio() {
                 .map((project) => (
                   <button
                     className="project-card"
-                    key={project.title}
-                    onClick={() =>
-                      setVideo({
-                        id: project.video,
-                        title: `${project.artist} — ${project.title}`,
-                      })
-                    }
+                    key={project.key}
+                    onClick={() => setVideo(videoFor(project))}
                     aria-label={`Play ${project.title} by ${project.artist}`}
                   >
-                    <div className={`album-art cover-${project.video}`}>
+                    <div className={`album-art cover-${project.key}`}>
                       <Image
                         src={`/images/${project.image}`}
                         alt=""
@@ -592,6 +589,33 @@ export default function Studio() {
                     <p>{project.artist}</p>
                   </button>
                 ))}
+              <a className="project-card project-next" href="#contact">
+                <div className="album-art">
+                  <span className="cover-top">
+                    GLGS <span>WHAT’S NEXT</span>
+                  </span>
+                  <span className="cover-title">
+                    Your song
+                    <small>Recorded in Lapeer, Michigan</small>
+                  </span>
+                  <span className="album-play">
+                    <ArrowUpRight size={18} />
+                  </span>
+                </div>
+                <span className="project-category">Coming soon</span>
+                <h3>Your project</h3>
+                <p>Every recording starts with a conversation</p>
+              </a>
+            </div>
+            <div className="client-roll">
+              <span className="eyebrow">
+                OUR PREVIOUS CLIENTS INCLUDE GROUPS, SOLOISTS, AND SONGWRITERS
+              </span>
+              <p>
+                {clients.map((client) => (
+                  <span key={client}>{client}</span>
+                ))}
+              </p>
             </div>
             <div className="listen-footer">
               <span className="status-dot" />
@@ -638,6 +662,14 @@ export default function Studio() {
             >
               Take the studio tour <Play size={15} />
             </button>
+            <div className="space-links">
+              <a className="underlink" href="/equipment">
+                See the full equipment list <ArrowUpRight size={15} />
+              </a>
+              <a className="underlink" href="/sessions">
+                Photos from recent sessions <ArrowUpRight size={15} />
+              </a>
+            </div>
           </div>
           <div className="studio-gallery">
             <div className="gallery-image">
@@ -718,6 +750,9 @@ export default function Studio() {
                   mastering engineers. We’ll help find the right talent for your
                   project.
                 </p>
+                <a className="underlink" href="/team">
+                  Meet our staff & partners <ArrowUpRight size={15} />
+                </a>
               </div>
             </div>
           </div>
@@ -742,6 +777,9 @@ export default function Studio() {
           <p className="quote-context">
             On recording with Great Lakes Gospel Studio
           </p>
+          <a className="underlink quote-more" href="/testimonials">
+            Read what our clients say <ArrowUpRight size={15} />
+          </a>
         </section>
 
         <section id="pricing" className="pricing section">
@@ -837,8 +875,9 @@ export default function Studio() {
             </div>
             <p className="pricing-note">
               Published studio rates. Final scope and pricing are confirmed with
-              Stephen before your session. Additional musicians and services are
-              quoted separately.
+              Stephen before your session. Additional musicians, live strings,
+              and CD duplication are listed on the{" "}
+              <a href="/pricing">full price list</a>.
             </p>
             <details className="pricing-faq">
               <summary>
