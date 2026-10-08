@@ -168,6 +168,12 @@ export function PageShell({
             >
               Stephen Forester Ministries <ArrowUpRight size={13} />
             </a>
+            <p className="footer-credit">
+              <a href="https://www.elijahdesent.com" target="_blank" rel="noopener">
+                Website Design
+              </a>{" "}
+              by Elijah Desent
+            </p>
           </div>
         </div>
       </footer>
