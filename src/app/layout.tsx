@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, DM_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 const sans = DM_Sans({
   subsets: ["latin"],
@@ -22,7 +23,7 @@ const serif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://greatlakesgospelstudio.elijahdesent.com"),
+  metadataBase: new URL(SITE_URL),
   title: "Great Lakes Gospel Studio | Your Sound. A Greater Purpose.",
   description:
     "A Christian recording studio in Lapeer, Michigan. Bring your music to life with Stephen Forester: recording, production, custom soundtracks, mixing and mastering.",

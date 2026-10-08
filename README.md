@@ -95,3 +95,13 @@ Content and media were reviewed October 1, 2026, and fully migrated October 8, 2
 - Production branch: `main`.
 
 This publishes the current design draft. The original studio website remains unchanged. Content parity with the original site is complete (see “Content and features”); the new subpages still need adding to the sitemap when the domain moves.
+
+## Contact form
+
+The project inquiry form posts to `src/app/api/form/route.ts`, which emails
+Stephen through Resend (from `contact@elijahdesent.com`, reply-to the visitor).
+Settings live in Vercel, never in the code: `RESEND_API_KEY`, `FORM_TO`
+(currently greatlakesgospelstudio@yahoo.com) and `FORM_SECRET`. No email
+address is printed on the site, on purpose (harvested addresses get spam);
+"Send Stephen a message" links to the form. The site's real address is in
+`src/lib/site.ts` and drives the sitemap, robots and social previews.

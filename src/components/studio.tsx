@@ -146,21 +146,55 @@ export function VideoDialog({
   );
 }
 
+type FormStatus =
+  | { state: "idle" | "sending" | "sent" }
+  | { state: "error"; message: string };
+
 function ProjectForm() {
-  const [prepared, setPrepared] = useState(false);
-  const [mailLink, setMailLink] = useState("");
-  function prepare(event: React.FormEvent<HTMLFormElement>) {
+  const [status, setStatus] = useState<FormStatus>({ state: "idle" });
+  const [token, setToken] = useState("");
+  useEffect(() => {
+    fetch("/api/form", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setToken(d.token ?? ""))
+      .catch(() => {});
+  }, []);
+  async function send(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const subject = `Studio inquiry: ${data.get("type")} — ${data.get("name")}`;
-    const body = `Hi Stephen,\n\nI'd love to talk about a recording project.\n\nName: ${data.get("name")}\nEmail: ${data.get("email")}\nProject: ${data.get("type")}\n\n${data.get("message")}\n\nThank you!`;
-    const href = `mailto:greatlakesgospelstudio@yahoo.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    setMailLink(href);
-    setPrepared(true);
-    window.location.href = href;
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
+    setStatus({ state: "sending" });
+    try {
+      const res = await fetch("/api/form", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, token }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStatus({
+          state: "error",
+          message: body.error ?? "Something went wrong. Please call (810) 358-0518.",
+        });
+        return;
+      }
+      form.reset();
+      setStatus({ state: "sent" });
+    } catch {
+      setStatus({ state: "error", message: "Couldn’t send. Please call (810) 358-0518." });
+    }
   }
   return (
-    <form className="project-form" onSubmit={prepare}>
+    <form id="inquiry" className="project-form" onSubmit={send}>
+      {/* Honeypot: hidden from people, filled in by bots. */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+      />
       <div className="form-heading">
         <span className="eyebrow">LET’S MAKE SOMETHING MEANINGFUL</span>
         <Music2 size={22} />
@@ -215,20 +249,29 @@ function ProjectForm() {
           maxLength={4000}
         />
       </label>
-      <button className="button copper" type="submit">
-        Let’s talk about your project <ArrowUpRight size={19} />
+      <button
+        className="button copper"
+        type="submit"
+        disabled={status.state === "sending"}
+      >
+        {status.state === "sending" ? "Sending…" : "Let’s talk about your project"}{" "}
+        <ArrowUpRight size={19} />
       </button>
       <p className="form-note">
-        Opens your email app with your project details ready to send.
+        Your message goes straight to Stephen. Rather talk? Call{" "}
+        <a href="tel:+18103580518">(810) 358-0518</a>.
       </p>
-      {prepared && (
+      {status.state === "sent" && (
         <div className="form-status" role="status">
           <Check size={18} />
           <p>
-            Your inquiry is ready in your email app. Send it there to reach
-            Stephen. <a href={mailLink}>Open email again</a>, or call{" "}
-            <a href="tel:+18103580518">(810) 358-0518</a>.
+            Thank you — it’s sent. Stephen will get back to you personally.
           </p>
+        </div>
+      )}
+      {status.state === "error" && (
+        <div className="form-status" role="alert">
+          <p>{status.message}</p>
         </div>
       )}
     </form>
@@ -919,9 +962,9 @@ export default function Studio() {
                   <span>(810) 358-0518</span>
                   <ArrowUpRight size={17} />
                 </a>
-                <a href="mailto:greatlakesgospelstudio@yahoo.com">
+                <a href="#inquiry">
                   <Mail size={18} />
-                  <span>greatlakesgospelstudio@yahoo.com</span>
+                  <span>Send Stephen a message</span>
                   <ArrowUpRight size={17} />
                 </a>
                 <p>
